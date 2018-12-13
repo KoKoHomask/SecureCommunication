@@ -22,13 +22,14 @@ namespace SecureCommunication.Common
         #region udpServer
         private static readonly ConcurrentDictionary<string, UDPModel> list = new ConcurrentDictionary<string, UDPModel>();//Dictionary
         bool server_thread_flag = false;
+        Socket udpServer;
         public void StopUDPServer()
         {
             server_thread_flag = false;
         }
         public void StartUDPServer(IPEndPoint serverIP)
         {
-            Socket udpServer = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            udpServer = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             udpServer.Bind(serverIP);
             IPEndPoint ipep = new IPEndPoint(IPAddress.Any, 0);
             EndPoint Remote = (EndPoint)ipep;
@@ -77,7 +78,6 @@ namespace SecureCommunication.Common
                     string message = Encoding.UTF8.GetString(data, 0, length);
 
                     string ipport = (Remote as IPEndPoint).Address.ToString() + ":" + (Remote as IPEndPoint).Port.ToString();
-
                     UDPModel model = new UDPModel() { IP = Remote, date = DateTime.Now, SessionID = Guid.NewGuid().ToString().Split('-')[0] };
                     list.AddOrUpdate(ipport, model, (k, oldvalue) => oldvalue = model);
 
@@ -98,6 +98,11 @@ namespace SecureCommunication.Common
                 }
                 udpServer.Close();
             }).Start();
+        }
+        public void UDPServerSend(byte[] sendArray,string remoteSessionID)
+        {
+            var send = list.Where(x => x.Value.SessionID == remoteSessionID).FirstOrDefault();
+            udpServer?.SendTo(sendArray, sendArray.Length, SocketFlags.None, send.Value.IP);
         }
         #endregion
 

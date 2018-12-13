@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace SecureCommunication.Common
 {
-    public class UDPModel
+    public class DeviceModel
     {
         public EndPoint IP { get; set; }
         public string SessionID { get; set; }
@@ -19,8 +19,13 @@ namespace SecureCommunication.Common
     {
         const string HEARTMESSAGE = "heartmessage";
         const string EXITMESSAGE = "exitexitttit";
+        public UDPHelper(ConcurrentDictionary<string, DeviceModel> deviceList)
+        {
+            list = deviceList;
+        }
         #region udpServer
-        private static readonly ConcurrentDictionary<string, UDPModel> list = new ConcurrentDictionary<string, UDPModel>();//Dictionary
+        public event Action<string,byte[]> ReciveDataEvent;
+        private ConcurrentDictionary<string, DeviceModel> list;
         bool server_thread_flag = false;
         Socket udpServer;
         public void StopUDPServer()
@@ -51,7 +56,7 @@ namespace SecureCommunication.Common
                     {
                         for (int i = 0; i < rmKey.Count; i++)
                         {
-                            UDPModel model;
+                            DeviceModel model;
                             list.TryRemove(rmKey[i], out model);
                             Console.WriteLine("clear expried ipendpoint{0}", rmKey[i]);
                         }
@@ -63,7 +68,7 @@ namespace SecureCommunication.Common
             {
                 while (server_thread_flag)
                 {
-                    byte[] data = new byte[1024];
+                    byte[] data = new byte[10240];
                     int length = 0;
                     try
                     {
@@ -77,8 +82,9 @@ namespace SecureCommunication.Common
                     string datetime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                     string message = Encoding.UTF8.GetString(data, 0, length);
 
+                    string sessionID = Guid.NewGuid().ToString().Split('-')[0];
                     string ipport = (Remote as IPEndPoint).Address.ToString() + ":" + (Remote as IPEndPoint).Port.ToString();
-                    UDPModel model = new UDPModel() { IP = Remote, date = DateTime.Now, SessionID = Guid.NewGuid().ToString().Split('-')[0] };
+                    DeviceModel model = new DeviceModel() { IP = Remote, date = DateTime.Now, SessionID = sessionID };
                     list.AddOrUpdate(ipport, model, (k, oldvalue) => oldvalue = model);
 
                     if (message == EXITMESSAGE || message == HEARTMESSAGE)
@@ -87,13 +93,10 @@ namespace SecureCommunication.Common
                     }
                     else
                     {
+                        byte[] reciveData = new byte[length];
+                        Array.Copy(data, reciveData, length);
                         Console.WriteLine(string.Format("{0} recive message from{1}:{2}", datetime, ipport, message));
-                        var send = list.Where(x => x.Key != ipport).ToList();
-                        for (int i = 0; i < send.Count(); i++)
-                        {
-                            udpServer.SendTo(data, length, SocketFlags.None, send[i].Value.IP);
-                            Console.WriteLine("send message to{0}", (send[i].Value.IP as IPEndPoint).Address.ToString());
-                        }
+                        ReciveDataEvent?.Invoke(sessionID, reciveData);
                     }
                 }
                 udpServer.Close();

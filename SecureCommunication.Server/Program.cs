@@ -9,12 +9,14 @@ namespace SecureCommunication.Server
     {
         static void Main(string[] args)
         {
-            UDPHelper udphelper = new UDPHelper();
+            Protocol protocol = new Protocol();
+            UDPHelper udphelper = new UDPHelper(protocol.DeviceList);
             string hostName = Dns.GetHostName();
             IPHostEntry localhost = Dns.GetHostByName(hostName);
             IPAddress localaddr = localhost.AddressList[0];
             IPEndPoint EndPoint = new IPEndPoint(localaddr, 12345);//传递IPAddress和Port
             udphelper.StartUDPServer(EndPoint);
+            udphelper.ReciveDataEvent += Udphelper_ReciveDataEvent;
 
             Console.WriteLine("\n\n按[F4]键退出。");
             ConsoleKey key;
@@ -29,6 +31,11 @@ namespace SecureCommunication.Server
                 }
                 Thread.Sleep(1);
             }
+        }
+
+        private static void Udphelper_ReciveDataEvent(string arg1, byte[] arg2)
+        {
+            
         }
     }
 }

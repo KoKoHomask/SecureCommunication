@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace SecureCommunication.Common
 {
-    class UDPClientHelper:UDPHelper
+    public class UDPClientHelper:UDPHelper
     {
         bool client_thread_flag = false;
         long client_HeartTick = 0;

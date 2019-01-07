@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace SecureCommunication.Common
 {
-    class UDPServerHelper: UDPHelper
+    public class UDPServerHelper: UDPHelper
     {
         public event Action<string, byte[]> ReciveDataEvent;
         bool server_thread_flag = false;
@@ -102,7 +102,7 @@ namespace SecureCommunication.Common
 
         public override void Send(byte[] sendArray,string remote)
         {
-            var send = devicelist.Where(x => x.Value.SessionID == remoteSessionID).FirstOrDefault();
+            var send = devicelist.Where(x => x.Value.SessionID == remote).FirstOrDefault();
             udpServer?.SendTo(sendArray, sendArray.Length, SocketFlags.None, send.Value.IP);
         }
     }

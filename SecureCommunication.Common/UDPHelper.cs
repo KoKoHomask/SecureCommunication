@@ -114,7 +114,7 @@ namespace SecureCommunication.Common
         long client_HeartTick = 0;
         static object lockobj = new object();
         UdpClient udpClient;
-
+        IPEndPoint udpServerEndPoint;
         public void StopUDPClient()
         {
             client_thread_flag = false;
@@ -125,11 +125,12 @@ namespace SecureCommunication.Common
             udpClient?.Close();
             udpClient = new UdpClient(localPort);
             udpClient?.Send(Encoding.Default.GetBytes(HEARTMESSAGE), Encoding.Default.GetBytes(HEARTMESSAGE).Length, ServerAddress, ServerPort);
-            IPEndPoint ipep = new IPEndPoint(IPAddress.Any, 0);
-            EndPoint Remote = ipep;
+            IPAddress IPadr = IPAddress.Parse(ServerAddress);
+            udpServerEndPoint =  new IPEndPoint(IPadr, ServerPort);
+            //EndPoint Remote = ipep;
             client_thread_flag = true;
             new Thread(() => {
-                while (client_thread_flag)
+                while (client_thread_flag)//心跳包
                 {
                     Thread.Sleep(10);
                     lock (lockobj)
@@ -146,7 +147,30 @@ namespace SecureCommunication.Common
                         Console.WriteLine("unable to connect to UDP server,it may be after the network is restored");
                     }
                 }
-                udpClient?.Close();
+                new Thread(() =>
+                {
+                    byte[] array = new byte[50];
+                    //DateTime lastdate = DateTime.Now;
+                    while (client_thread_flag)
+                    {
+                        byte[] data = new byte[1024];
+                        try
+                        {
+                            data = udpClient.Receive(ref udpServerEndPoint);
+
+                            lock (lockobj)
+                            {
+                                client_HeartTick = 0;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(string.Format("error：{0}", ex.Message));
+                            break;
+                        }
+                    }
+                    udpClient.Close();
+                }).Start();
             }).Start();
         }
         public void UDPClientSend(byte[] byteArray, string ServerAddress, int ServerPort)

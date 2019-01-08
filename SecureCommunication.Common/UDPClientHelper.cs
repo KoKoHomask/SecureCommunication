@@ -15,6 +15,9 @@ namespace SecureCommunication.Common
         static object lockobj = new object();
         UdpClient udpClient;
         IPEndPoint udpServerEndPoint;
+
+        public override event Action<string, byte[]> ReciveDataEvent;
+
         public int LocalPort { get; set; }
         public string ServerAddress { get; set; }
         public int ServerPort { get; set; }
@@ -25,7 +28,7 @@ namespace SecureCommunication.Common
             ServerAddress = serverAddress;
             ServerPort = serverPort;
         }
-        public void StopUDPClient()
+        public override void StopUDP()
         {
             client_thread_flag = false;
         }
@@ -72,6 +75,7 @@ namespace SecureCommunication.Common
                             {
                                 client_HeartTick = 0;
                             }
+                            ReciveDataEvent?.Invoke(ServerAddress+":"+ServerPort,data);
                         }
                         catch (Exception ex)
                         {

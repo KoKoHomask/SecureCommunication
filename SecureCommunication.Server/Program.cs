@@ -12,12 +12,11 @@ namespace SecureCommunication.Server
         static Protocol protocol;
         static void Main(string[] args)
         {
-            UDPServerHelper udphelper = new UDPServerHelper(DeviceList, 12345);
+            UDPHelper udphelper = new UDPServerHelper(DeviceList, 12345);
             protocol = new Protocol(DeviceList,udphelper);
             
             udphelper.StartUDP();
             udphelper.ReciveDataEvent += Udphelper_ReciveDataEvent;
-
             Console.WriteLine("\n\n按[F4]键退出。");
             ConsoleKey key;
             while (true)
@@ -26,7 +25,7 @@ namespace SecureCommunication.Server
                 if (key == ConsoleKey.F4)
                 {
                     Console.WriteLine("end waiting for udp data.");
-                    udphelper.StopUDPServer();
+                    udphelper.StopUDP();
                     break;
                 }
                 Thread.Sleep(1);

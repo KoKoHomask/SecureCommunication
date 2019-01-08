@@ -17,10 +17,12 @@ namespace SecureCommunication.Common
     }
     public abstract class UDPHelper
     {
+        public abstract event Action<string, byte[]> ReciveDataEvent;
         protected const string HEARTMESSAGE = "heartmessage";
         protected const string EXITMESSAGE = "exitexitttit";
         protected ConcurrentDictionary<string, DeviceModel> devicelist;
         public abstract void Send(byte[] sendArray, string remote);
         public abstract void StartUDP();
+        public abstract void StopUDP();
     }
 }

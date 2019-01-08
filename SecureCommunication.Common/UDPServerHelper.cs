@@ -11,7 +11,7 @@ namespace SecureCommunication.Common
 {
     public class UDPServerHelper: UDPHelper
     {
-        public event Action<string, byte[]> ReciveDataEvent;
+        public override event Action<string, byte[]> ReciveDataEvent;
         bool server_thread_flag = false;
         Socket udpServer;
         public int LocalPort { get; set; }
@@ -20,7 +20,7 @@ namespace SecureCommunication.Common
             devicelist= DeviceList;
             LocalPort = localPort;
         }
-        public void StopUDPServer()
+        public override void StopUDP()
         {
             server_thread_flag = false;
         }

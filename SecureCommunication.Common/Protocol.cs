@@ -28,8 +28,10 @@ namespace SecureCommunication.Common
         {
             deviceList = DeviceList;
             UDPHelper = uDPHelper;
+            UDPHelper.ReciveDataEvent += AnalysisReciveData;
         }
-        public ProcessModel AnalysisReciveData(string remote,byte[] reciveData)
+
+        public void AnalysisReciveData(string remote,byte[] reciveData)
         {
             var model = new ProcessModel();
             DeviceModel deviceModel;
@@ -44,7 +46,7 @@ namespace SecureCommunication.Common
                         var sendArray= Encoding.Default.GetBytes(ServerInfo.ToCharArray());
                         UDPHelper.Send(sendArray, remote);//将服务器信息以明文方式返回
                     }
-                    return null;
+                    break;
                 case MsgType.S_GetSessionID://请求自己的SessionID
                     if (deviceList.TryGetValue(remote, out deviceModel))
                     {
@@ -86,7 +88,6 @@ namespace SecureCommunication.Common
                 default:
                     break;
             }
-            return null;
         }
         /// <summary>
         /// 从接收到的数组中提取sessionid

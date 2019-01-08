@@ -13,24 +13,34 @@ namespace SecureCommunication.Common
     {
         public event Action<byte[]> ReciveMessageEvent;
         public event Action<byte[]> NewChatEvent;
+        public event Action<byte[]> ReciveSysInfoEvent;
         public enum MsgType
         {
             S_GetServerInfo=0,
             S_GetSessionID,
             S_NewChat,//服务端转发客户端建立会话请求
             S_SendMsg,//服务端转发消息
+            C_GetServerInfo,
+            C_GetSessionID,
             C_NewChat,//客户端新的会话请求
             C_ReciveMessage,
         }
-        ConcurrentDictionary<string, DeviceModel> deviceList { get; }
-        UDPHelper UDPHelper { get; }
-        public Protocol(ConcurrentDictionary<string, DeviceModel> DeviceList,UDPHelper uDPHelper)
+        public string ServerInfoMsg { get; set; } = "Hello World!";
+        protected ConcurrentDictionary<string, DeviceModel> deviceList { get; }
+        protected UDPHelper UDPHelper { get; }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="DeviceList">设备列表</param>
+        /// <param name="uDPHelper">UDP发送</param>
+        /// <param name="AutoProcess">是否由协议自动处理</param>
+        public Protocol(ConcurrentDictionary<string, DeviceModel> DeviceList,UDPHelper uDPHelper,bool AutoProcess=true)
         {
             deviceList = DeviceList;
             UDPHelper = uDPHelper;
-            UDPHelper.ReciveDataEvent += AnalysisReciveData;
+            if (AutoProcess)
+                UDPHelper.ReciveDataEvent += AnalysisReciveData;
         }
-
         public void AnalysisReciveData(string remote,byte[] reciveData)
         {
             var model = new ProcessModel();
@@ -40,14 +50,17 @@ namespace SecureCommunication.Common
             switch ((MsgType)reciveData[0])
             {
                 case MsgType.S_GetServerInfo://获取服务器信息
+                    Console.WriteLine(remote + ": " + byteToHexStr(reciveData));
                     if (deviceList.TryGetValue(remote, out deviceModel))
                     {
-                        string ServerInfo = "Hello World!";
-                        var sendArray= Encoding.Default.GetBytes(ServerInfo.ToCharArray());
-                        UDPHelper.Send(sendArray, remote);//将服务器信息以明文方式返回
+                        var sendArray= Encoding.Default.GetBytes(ServerInfoMsg.ToCharArray());
+                        List<byte> lst = new List<byte>() { (byte)MsgType.C_GetServerInfo };
+                        lst.AddRange(sendArray);
+                        UDPHelper.Send(lst.ToArray(), remote);//将服务器信息以明文方式返回
                     }
                     break;
                 case MsgType.S_GetSessionID://请求自己的SessionID
+                    Console.WriteLine(remote + ": " + byteToHexStr(reciveData));
                     if (deviceList.TryGetValue(remote, out deviceModel))
                     {
                         var sendArray = Encoding.Default.GetBytes(deviceModel.SessionID.ToCharArray());
@@ -56,6 +69,7 @@ namespace SecureCommunication.Common
                     
                     break;
                 case MsgType.S_NewChat://请求与SessionID建立会话(将自己加了密的公钥发给该客户)
+                    Console.WriteLine(remote + ": " + byteToHexStr(reciveData));
                     sessionID = GetSessionIDFromReciveArray(reciveData);
                     idStr = Encoding.Default.GetString(sessionID);
                     var device= deviceList.Where(x => x.Value.SessionID == idStr).FirstOrDefault();
@@ -68,6 +82,7 @@ namespace SecureCommunication.Common
                     }
                     break;
                 case MsgType.S_SendMsg://发送消息给SessionID
+                    Console.WriteLine(remote + ": " + byteToHexStr(reciveData));
                     sessionID = GetSessionIDFromReciveArray(reciveData);
                     idStr = Encoding.Default.GetString(sessionID);
                     var deviceTmp = deviceList.Where(x => x.Value.SessionID == idStr).FirstOrDefault();
@@ -86,6 +101,7 @@ namespace SecureCommunication.Common
                     ReciveMessageEvent?.Invoke(reciveData);
                     break;
                 default:
+                    ReciveSysInfoEvent?.Invoke(reciveData);
                     break;
             }
         }
@@ -131,6 +147,28 @@ namespace SecureCommunication.Common
                 array[i + idOffset] = replaceID[i];
             }
             return array;
+        }
+        // <summary>
+        /// 字节数组转16进制字符串
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <returns></returns>
+        public string byteToHexStr(byte[] bytes)
+        {
+            try
+            {
+                string returnStr = "?";
+                if (bytes != null)
+                {
+                    for (int i = 0; i < bytes.Length; i++)
+                    {
+                        returnStr += bytes[i].ToString("X2") + " ";
+                    }
+                }
+                return returnStr;
+            }
+            catch { }
+            return "noop";
         }
     }
     public class ProcessModel

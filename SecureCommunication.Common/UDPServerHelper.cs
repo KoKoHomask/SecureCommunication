@@ -15,9 +15,11 @@ namespace SecureCommunication.Common
         bool server_thread_flag = false;
         Socket udpServer;
         public int LocalPort { get; set; }
-        public UDPServerHelper(ConcurrentDictionary<string, DeviceModel> DeviceList, int localPort)
+        IPAddress iPAddress;
+        public UDPServerHelper(ConcurrentDictionary<string, DeviceModel> DeviceList,IPAddress address, int localPort)
         {
-            devicelist= DeviceList;
+            iPAddress = address;
+            devicelist = DeviceList;
             LocalPort = localPort;
         }
         public override void StopUDP()
@@ -26,11 +28,8 @@ namespace SecureCommunication.Common
         }
         public override void StartUDP()
         {
-            string hostName = Dns.GetHostName();
-            IPHostEntry localhost = Dns.GetHostByName(hostName);
-            IPAddress localaddr = localhost.AddressList[0];
-            IPEndPoint serverIP = new IPEndPoint(localaddr, LocalPort);
-
+            if (iPAddress == null) throw new Exception("ipAddress is NULL");
+            IPEndPoint serverIP = new IPEndPoint(iPAddress, LocalPort);
             udpServer = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             udpServer.Bind(serverIP);
             IPEndPoint ipep = new IPEndPoint(IPAddress.Any, 0);
@@ -93,7 +92,7 @@ namespace SecureCommunication.Common
                         byte[] reciveData = new byte[length];
                         Array.Copy(data, reciveData, length);
                         Console.WriteLine(string.Format("{0} recive message from{1}:{2}", datetime, ipport, message));
-                        ReciveDataEvent?.Invoke(sessionID, reciveData);
+                        ReciveDataEvent?.Invoke(ipport, reciveData);
                     }
                 }
                 udpServer.Close();
@@ -102,8 +101,14 @@ namespace SecureCommunication.Common
 
         public override void Send(byte[] sendArray,string remote)
         {
-            var send = devicelist.Where(x => x.Value.SessionID == remote).FirstOrDefault();
-            udpServer?.SendTo(sendArray, sendArray.Length, SocketFlags.None, send.Value.IP);
+            //var send = devicelist.Where(x => x.Value.SessionID == remote).FirstOrDefault();
+            //udpServer?.SendTo(sendArray, sendArray.Length, SocketFlags.None, send.Value.IP);
+            DeviceModel deviceModel;
+            if(devicelist.TryGetValue(remote,out deviceModel))
+            {
+                udpServer?.SendTo(sendArray, sendArray.Length, SocketFlags.None,deviceModel.IP);
+            }
+            
         }
     }
 }

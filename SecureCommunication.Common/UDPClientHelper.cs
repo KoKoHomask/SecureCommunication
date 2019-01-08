@@ -21,6 +21,7 @@ namespace SecureCommunication.Common
         public int LocalPort { get; set; }
         public string ServerAddress { get; set; }
         public int ServerPort { get; set; }
+        IPAddress iPAddress;
         public UDPClientHelper(ConcurrentDictionary<string, DeviceModel> DeviceList, int localPort, string serverAddress, int serverPort)
         {
             devicelist = DeviceList;
@@ -38,8 +39,8 @@ namespace SecureCommunication.Common
             udpClient?.Close();
             udpClient = new UdpClient(LocalPort);
             udpClient?.Send(Encoding.Default.GetBytes(HEARTMESSAGE), Encoding.Default.GetBytes(HEARTMESSAGE).Length, ServerAddress, ServerPort);
-            IPAddress IPadr = IPAddress.Parse(ServerAddress);
-            udpServerEndPoint = new IPEndPoint(IPadr, ServerPort);
+            iPAddress = IPAddress.Parse(ServerAddress);
+            udpServerEndPoint = new IPEndPoint(iPAddress, ServerPort);
             //EndPoint Remote = ipep;
             client_thread_flag = true;
             new Thread(() => {
@@ -60,34 +61,34 @@ namespace SecureCommunication.Common
                         Console.WriteLine("unable to connect to UDP server,it may be after the network is restored");
                     }
                 }
-                new Thread(() =>
+            }).Start();
+            new Thread(() =>
+            {
+                byte[] array = new byte[50];
+                //DateTime lastdate = DateTime.Now;
+                while (client_thread_flag)
                 {
-                    byte[] array = new byte[50];
-                    //DateTime lastdate = DateTime.Now;
-                    while (client_thread_flag)
+                    byte[] data = new byte[1024];
+                    try
                     {
-                        byte[] data = new byte[1024];
-                        try
-                        {
-                            data = udpClient.Receive(ref udpServerEndPoint);
+                        data = udpClient.Receive(ref udpServerEndPoint);
 
-                            lock (lockobj)
-                            {
-                                client_HeartTick = 0;
-                            }
-                            ReciveDataEvent?.Invoke(ServerAddress+":"+ServerPort,data);
-                        }
-                        catch (Exception ex)
+                        lock (lockobj)
                         {
-                            Console.WriteLine(string.Format("error：{0}", ex.Message));
-                            break;
+                            client_HeartTick = 0;
                         }
+                        ReciveDataEvent?.Invoke(ServerAddress + ":" + ServerPort, data);
                     }
-                    udpClient.Close();
-                }).Start();
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(string.Format("error：{0}", ex.Message));
+                        break;
+                    }
+                }
+                udpClient.Close();
             }).Start();
         }
-        public override void Send(byte[] byteArray,string remote)
+        public override void Send(byte[] byteArray,string remote="客户端这个没啥用")
         {
             udpClient?.Send(byteArray, byteArray.Length, ServerAddress, ServerPort);
             lock (lockobj)

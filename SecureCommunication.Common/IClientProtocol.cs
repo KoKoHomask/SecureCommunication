@@ -7,5 +7,8 @@ namespace SecureCommunication.Common
     interface IClientProtocol
     {
         void GetServerInfo();
+        void GetSessionID();
+        void RequestChat(string targetSid, byte[] requestArray);
+        void ExchangeKey(byte[] targetSid, string securityStr);
     }
 }

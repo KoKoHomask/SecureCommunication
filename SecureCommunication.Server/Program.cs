@@ -39,10 +39,12 @@ namespace SecureCommunication.Server
 
             udphelper = new UDPServerHelper(DeviceList, iPAddress, 12345);
             protocol = new Protocol(DeviceList,udphelper,false);
-            
+            protocol.ServerInfoMsg = "This is open source project in github. https://github.com/KoKoHomask/SecureCommunication";
+
+
             udphelper.StartUDP();
             udphelper.ReciveDataEvent += Udphelper_ReciveDataEvent;
-            Console.WriteLine("\n\n按[F4]键退出。");
+            Console.WriteLine("\n\n Press [F4] to exit。");
             ConsoleKey key;
             while (true)
             {

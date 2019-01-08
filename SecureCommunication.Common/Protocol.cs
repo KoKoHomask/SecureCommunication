@@ -14,6 +14,7 @@ namespace SecureCommunication.Common
         public event Action<byte[]> ReciveMessageEvent;
         public event Action<byte[]> NewChatEvent;
         public event Action<byte[]> ReciveSysInfoEvent;
+        public event Action<byte[]> ExchangeKeyEvent;
         public enum MsgType
         {
             S_GetServerInfo=0,
@@ -24,6 +25,8 @@ namespace SecureCommunication.Common
             C_GetSessionID,
             C_NewChat,//客户端新的会话请求
             C_ReciveMessage,
+            S_ExchangeKey,//服务端 交换key
+            C_ExchangeKey,//客户端 交换key
         }
         public string ServerInfoMsg { get; set; } = "Hello World!";
         protected ConcurrentDictionary<string, DeviceModel> deviceList { get; }
@@ -45,8 +48,6 @@ namespace SecureCommunication.Common
         {
             var model = new ProcessModel();
             DeviceModel deviceModel;
-            byte[] sessionID;
-            string idStr;
             switch ((MsgType)reciveData[0])
             {
                 case MsgType.S_GetServerInfo://获取服务器信息
@@ -64,35 +65,21 @@ namespace SecureCommunication.Common
                     if (deviceList.TryGetValue(remote, out deviceModel))
                     {
                         var sendArray = Encoding.Default.GetBytes(deviceModel.SessionID.ToCharArray());
+                        sendArray[0] = (byte)MsgType.C_GetSessionID;
                         UDPHelper.Send(sendArray, remote);
                     }
-                    
                     break;
                 case MsgType.S_NewChat://请求与SessionID建立会话(将自己加了密的公钥发给该客户)
                     Console.WriteLine(remote + ": " + byteToHexStr(reciveData));
-                    sessionID = GetSessionIDFromReciveArray(reciveData);
-                    idStr = Encoding.Default.GetString(sessionID);
-                    var device= deviceList.Where(x => x.Value.SessionID == idStr).FirstOrDefault();
-                    if (device.Key!=null&&deviceList.TryGetValue(remote, out deviceModel))
-                    {
-                        var sendArray = ReplaceSessionIDFromArray(
-                            Encoding.Default.GetBytes(deviceModel.SessionID.ToCharArray()), reciveData);
-                        sendArray[0] = (byte)MsgType.C_NewChat;
-                        UDPHelper.Send(sendArray, device.Key);
-                    }
+                    ForwardingPackage(remote, reciveData, MsgType.C_NewChat);
                     break;
                 case MsgType.S_SendMsg://发送消息给SessionID
                     Console.WriteLine(remote + ": " + byteToHexStr(reciveData));
-                    sessionID = GetSessionIDFromReciveArray(reciveData);
-                    idStr = Encoding.Default.GetString(sessionID);
-                    var deviceTmp = deviceList.Where(x => x.Value.SessionID == idStr).FirstOrDefault();
-                    if(deviceTmp.Key!=null && deviceList.TryGetValue(remote, out deviceModel))
-                    {
-                        var sendArray = ReplaceSessionIDFromArray(
-                            Encoding.Default.GetBytes(deviceModel.SessionID.ToCharArray()), reciveData);//将数据包中的接收者替换成发送者
-                        sendArray[0] = (byte)MsgType.C_ReciveMessage;//修改消息头
-                        UDPHelper.Send(sendArray, deviceTmp.Key);
-                    }
+                    ForwardingPackage(remote, reciveData, MsgType.C_ReciveMessage);
+                    break;
+                case MsgType.S_ExchangeKey:
+                    Console.WriteLine(remote + ": " + byteToHexStr(reciveData));
+                    ForwardingPackage(remote, reciveData, MsgType.C_ExchangeKey);
                     break;
                 case MsgType.C_NewChat:
                     NewChatEvent?.Invoke(reciveData);
@@ -100,9 +87,34 @@ namespace SecureCommunication.Common
                 case MsgType.C_ReciveMessage:
                     ReciveMessageEvent?.Invoke(reciveData);
                     break;
+                case MsgType.C_ExchangeKey:
+                    ExchangeKeyEvent?.Invoke(reciveData);
+                    break;
                 default:
                     ReciveSysInfoEvent?.Invoke(reciveData);
                     break;
+            }
+        }
+        /// <summary>
+        /// 服务器转发时修改数据包头文件并转发
+        /// </summary>
+        /// <param name="remote">从哪儿来的</param>
+        /// <param name="reciveData">收到的数据</param>
+        /// <param name="msgType">要修改的消息头</param>
+        private void ForwardingPackage(string remote,byte[] reciveData,MsgType msgType)
+        {
+            DeviceModel deviceModel;
+            byte[] sessionID;
+            string idStr;
+            sessionID = GetSessionIDFromReciveArray(reciveData);
+            idStr = Encoding.Default.GetString(sessionID);
+            var deviceTmp = deviceList.Where(x => x.Value.SessionID == idStr).FirstOrDefault();
+            if (deviceTmp.Key != null && deviceList.TryGetValue(remote, out deviceModel))
+            {
+                var sendArray = ReplaceSessionIDFromArray(
+                    Encoding.Default.GetBytes(deviceModel.SessionID.ToCharArray()), reciveData);//将数据包中的接收者替换成发送者
+                sendArray[0] = (byte)msgType;//修改消息头
+                UDPHelper.Send(sendArray, deviceTmp.Key);
             }
         }
         /// <summary>

@@ -31,7 +31,13 @@ namespace SecureCommunication.Common
         {
             UDPHelper.Send(new byte[] { (byte)MsgType.S_GetSessionID }, "");
         }
-
+        public void SendMessage(byte[] targetSid,byte[] msgArray)
+        {
+            List<byte> send = new List<byte>() { (byte)MsgType.S_SendMsg };
+            send.AddRange(targetSid);
+            send.AddRange(msgArray);
+            UDPHelper.Send(send.ToArray(), "");
+        }
         public void RequestChat(string targetSid,byte[] requestArray)
         {
             List<byte> send = new List<byte>() { (byte)MsgType.S_NewChat };

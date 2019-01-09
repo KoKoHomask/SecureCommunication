@@ -60,7 +60,7 @@ namespace SecureCommunication.Common
                     Thread.Sleep(1);
                 }
             }).Start();
-            new Thread(() =>
+            new Thread(() =>//接收线程
             {
                 while (server_thread_flag)
                 {
@@ -80,8 +80,11 @@ namespace SecureCommunication.Common
 
                     string sessionID = Guid.NewGuid().ToString().Split('-')[0];
                     string ipport = (Remote as IPEndPoint).Address.ToString() + ":" + (Remote as IPEndPoint).Port.ToString();
-                    DeviceModel model = new DeviceModel() { IP = Remote, date = DateTime.Now, SessionID = sessionID };
-                    devicelist.AddOrUpdate(ipport, model, (k, oldvalue) => oldvalue = model);
+                    DeviceModel model;
+                    if(!devicelist.TryGetValue(ipport,out model))
+                    {
+                        devicelist.TryAdd(ipport, new DeviceModel() { IP = Remote, date = DateTime.Now, SessionID = sessionID });
+                    }
 
                     if (message == EXITMESSAGE || message == HEARTMESSAGE)
                     {

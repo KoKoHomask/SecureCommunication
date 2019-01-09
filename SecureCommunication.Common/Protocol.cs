@@ -64,9 +64,10 @@ namespace SecureCommunication.Common
                     Console.WriteLine(remote + ": " + byteToHexStr(reciveData));
                     if (deviceList.TryGetValue(remote, out deviceModel))
                     {
-                        var sendArray = Encoding.Default.GetBytes(deviceModel.SessionID.ToCharArray());
-                        sendArray[0] = (byte)MsgType.C_GetSessionID;
-                        UDPHelper.Send(sendArray, remote);
+                        List<byte> sendLst = new List<byte>() { (byte)MsgType.C_GetSessionID };
+                        var sidArray = Encoding.Default.GetBytes(deviceModel.SessionID.ToCharArray());
+                        sendLst.AddRange(sidArray);
+                        UDPHelper.Send(sendLst.ToArray(), remote);
                     }
                     break;
                 case MsgType.S_NewChat://请求与SessionID建立会话(将自己加了密的公钥发给该客户)

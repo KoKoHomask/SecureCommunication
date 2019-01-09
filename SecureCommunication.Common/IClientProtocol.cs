@@ -10,5 +10,6 @@ namespace SecureCommunication.Common
         void GetSessionID();
         void RequestChat(string targetSid, byte[] requestArray);
         void ExchangeKey(byte[] targetSid, string securityStr);
+        void SendMessage(byte[] targetSid, byte[] msgArray);
     }
 }

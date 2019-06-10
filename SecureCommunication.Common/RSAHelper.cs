@@ -9,32 +9,25 @@ namespace SecureCommunication.Common
 {
     public class RSAHelper
     {
-        private int keySizeInBits = 7680;
-        private RSAEncryptionPadding rSAEncryptionPadding = RSAEncryptionPadding.Pkcs1;//.OaepSHA512;
-        private int encryptBufferSizeLess = 130;
-        public RSA RSA { get; private set; }
+        public RSAEncryptionPadding EncryptionPadding { get; set; } = RSAEncryptionPadding.Pkcs1;
+        public RSACryptoServiceProvider RSA { get; private set; }
         public string KeyToXmlString { get => ToXmlString(false); }
         public string KeyToXmlStringWithPrivate { get => ToXmlString(true); }
         /// <summary>
         /// 
         /// </summary>
         /// <param name="KeySizeInBits">RSA位数 2048,7680等</param>
-        /// <param name="EncryptBufferSizeLess">每次加密数组比最大限制小多少</param>
-        /// <param name="Padding">方向</param>
-        public RSAHelper(int KeySizeInBits, int EncryptBufferSizeLess, RSAEncryptionPadding Padding)
+        public RSAHelper(int KeySizeInBits)
         {
-            keySizeInBits = KeySizeInBits;
-            encryptBufferSizeLess = EncryptBufferSizeLess;
-            rSAEncryptionPadding = Padding;
-            RSA = RSA.Create(keySizeInBits);
+            RSA = new RSACryptoServiceProvider(KeySizeInBits);
         }
         public RSAHelper()
         {
-            RSA = RSA.Create(keySizeInBits);
+            RSA = new RSACryptoServiceProvider();
         }
         public RSAHelper(string xmlkey)
         {
-            RSA = RSA.Create();
+            RSA = new RSACryptoServiceProvider();
             FromXmlString(xmlkey);
         }
         void FromXmlString(string xmlString)
@@ -86,50 +79,112 @@ namespace SecureCommunication.Common
                     Convert.ToBase64String(parameters.Modulus),
                     Convert.ToBase64String(parameters.Exponent));
         }
-        public byte[] Encrypt(byte[] encryptArray)
+        public byte[] Encrypt(byte[] input)
         {
-            var bufferSize = RSA.KeySize / 8 - encryptBufferSizeLess;
-            var buffer = new byte[bufferSize];
-            using (MemoryStream inputStream = new MemoryStream(encryptArray),
-                     outputStream = new MemoryStream())
+            Func<byte[], byte[]> encrypt = sou =>
             {
-                while (true)
+                int maxBlockSize = RSA.KeySize / 8 - 11;
+                if (sou.Length <= maxBlockSize)
                 {
-                    int readSize = inputStream.Read(buffer, 0, bufferSize);
-                    if (readSize <= 0)
+                    return RSA.Encrypt(sou, EncryptionPadding);
+                }
+                using (MemoryStream plaiStream = new MemoryStream(sou))
+                {
+                    using (MemoryStream crypStream = new MemoryStream())
                     {
-                        break;
-                    }
+                        byte[] buffer = new byte[maxBlockSize];
+                        int blockSize = plaiStream.Read(buffer, 0, maxBlockSize);
 
-                    var temp = new byte[readSize];
-                    Array.Copy(buffer, 0, temp, 0, readSize);
-                    var encryptedBytes = RSA.Encrypt(temp, rSAEncryptionPadding);
-                    outputStream.Write(encryptedBytes, 0, encryptedBytes.Length);
-                }
-                return outputStream.ToArray();
-            }
-        }
-        public byte[] Decrypt(byte[] decryptArray)
-        {
-            int bufferSize = RSA.KeySize / 8;
-            var buffer = new byte[bufferSize];
-            using (MemoryStream inputStream = new MemoryStream(decryptArray),
-                 outputStream = new MemoryStream())
-            {
-                while (true)
-                {
-                    int readSize = inputStream.Read(buffer, 0, bufferSize);
-                    if (readSize <= 0)
-                    {
-                        break;
+                        while (blockSize > 0)
+                        {
+                            byte[] toEncrypt = new byte[blockSize];
+                            Array.Copy(buffer, 0, toEncrypt, 0, blockSize);
+
+                            byte[] cryptograph = RSA.Encrypt(toEncrypt, EncryptionPadding);
+                            crypStream.Write(cryptograph, 0, cryptograph.Length);
+
+                            blockSize = plaiStream.Read(buffer, 0, maxBlockSize);
+                        }
+
+                        return crypStream.ToArray();
                     }
-                    var temp = new byte[readSize];
-                    Array.Copy(buffer, 0, temp, 0, readSize);
-                    var rawBytes = RSA.Decrypt(temp, rSAEncryptionPadding);
-                    outputStream.Write(rawBytes, 0, rawBytes.Length);
                 }
-                return outputStream.ToArray();
+            };
+            return MarkData(encrypt(input));
+        }
+        public byte[] Decrypt(byte[] input)
+        {
+            if (IsEncrypt(input))
+            {
+                Func<byte[], byte[]> decrypt = sou =>
+                {
+
+                    int maxBlockSize = RSA.KeySize / 8;
+
+                    if (sou.Length <= maxBlockSize)
+                        return RSA.Decrypt(sou, EncryptionPadding);
+
+                    using (MemoryStream crypStream = new MemoryStream(sou))
+                    {
+                        using (MemoryStream plaiStream = new MemoryStream())
+                        {
+                            byte[] buffer = new byte[maxBlockSize];
+                            int blockSize = crypStream.Read(buffer, 0, maxBlockSize);
+
+                            while (blockSize > 0)
+                            {
+                                byte[] toDecrypt = new byte[blockSize];
+                                Array.Copy(buffer, 0, toDecrypt, 0, blockSize);
+
+                                byte[] plaintext = RSA.Decrypt(toDecrypt, EncryptionPadding);
+                                plaiStream.Write(plaintext, 0, plaintext.Length);
+
+                                blockSize = crypStream.Read(buffer, 0, maxBlockSize);
+                            }
+
+                            return plaiStream.ToArray();
+                        }
+                    }
+                };
+                return decrypt(ClearDataMark(input));
             }
+            return input;
+        }
+        private byte[] MarkData(byte[] input)
+        {
+            byte[] newBytes = new byte[input.Length + 200];
+            for (int i = 0; i < newBytes.Length; i++)
+            {
+                if (i < 100 || i > newBytes.Length - 100 - 1)
+                {
+                    newBytes[i] = 0;
+                }
+                else
+                {
+                    newBytes[i] = input[i - 100];
+                }
+            }
+            return newBytes;
+        }
+        private byte[] ClearDataMark(byte[] input)
+        {
+            byte[] newBytes = new byte[input.Length - 200];
+            for (int i = 100; i < input.Length - 100; i++)
+            {
+                newBytes[i - 100] = input[i];
+            }
+            return newBytes;
+        }
+        private bool IsEncrypt(byte[] input)
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                if (input[i] != 0 || input[input.Length - i - 1] != 0)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
     }
 }

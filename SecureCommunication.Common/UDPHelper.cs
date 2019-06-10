@@ -14,6 +14,7 @@ namespace SecureCommunication.Common
         public EndPoint IP { get; set; }
         public string SessionID { get; set; }
         public DateTime date { get; set; }
+        public RSAHelper rsa { get; set; }
     }
     public abstract class UDPHelper
     {

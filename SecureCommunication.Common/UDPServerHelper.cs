@@ -81,10 +81,10 @@ namespace SecureCommunication.Common
                     string sessionID = Guid.NewGuid().ToString().Split('-')[0];
                     string ipport = (Remote as IPEndPoint).Address.ToString() + ":" + (Remote as IPEndPoint).Port.ToString();
                     DeviceModel model;
-                    if(!devicelist.TryGetValue(ipport,out model))
-                    {
+                    if (!devicelist.TryGetValue(ipport, out model))
                         devicelist.TryAdd(ipport, new DeviceModel() { IP = Remote, date = DateTime.Now, SessionID = sessionID });
-                    }
+                    else
+                        model.date = DateTime.Now;
 
                     if (message == EXITMESSAGE || message == HEARTMESSAGE)
                     {

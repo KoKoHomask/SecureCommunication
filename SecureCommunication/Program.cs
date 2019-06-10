@@ -17,12 +17,13 @@ namespace SecureCommunication
         static string SessionID;
         static string randomKey;
         static bool BreakReponse = false;
+        static byte[] AgreeObj = null;
         static void Main(string[] args)
         {
             Console.Write("Input localPort:");
             string localPort = Console.ReadLine();
-            udphelper = new UDPClientHelper(DeviceList, int.Parse(localPort), "39.107.243.182", 12345);
-            //udphelper = new UDPClientHelper(DeviceList, int.Parse(localPort), "192.168.1.77", 12345);
+            //udphelper = new UDPClientHelper(DeviceList, int.Parse(localPort), "39.107.243.182", 12345);
+            udphelper = new UDPClientHelper(DeviceList, int.Parse(localPort), "192.168.1.77", 12345);
             udphelper.StartUDP();
 
             protocol = new ClientProtocol(DeviceList, udphelper);
@@ -33,11 +34,21 @@ namespace SecureCommunication
             protocol.GetServerInfo();
             
             Console.WriteLine("Waiting....");
-            Wait:
+        Wait:
             string input = Console.ReadLine();
-            input = input.Substring(0, SessionID.Length);
-            if (SessionID == "")
-                goto Wait;
+            if (AgreeObj != null && input.ToLower() == "y")
+                AgreeConnect(AgreeObj);
+            else
+            {
+                input = input.Substring(0, SessionID.Length);
+                if (SessionID == "")
+                    goto Wait;
+                RequestConnect(input);
+            } 
+        }
+        //请求连接到用户
+        private static void RequestConnect(string sessionID)
+        {
             MyselfRSA = new RSAHelper();
 
             string str = "";
@@ -48,8 +59,20 @@ namespace SecureCommunication
             MyselfRSA = new RSAHelper();
             var publicKey = MyselfRSA.KeyToXmlString;
             string singleSecurity = CustomerSecurity.Encrypt(publicKey, randomKey);//得到公钥的简单加密
-            protocol.RequestChat(input, Encoding.Default.GetBytes(singleSecurity));
-
+            protocol.RequestChat(sessionID, Encoding.Default.GetBytes(singleSecurity));
+        }
+        private static void AgreeConnect(byte[] obj)
+        {
+            string str = "";
+            Random rd = new Random();
+            for (int i = 0; i < 1000; i++)
+                str += rd.Next().ToString();
+            randomKey = str;
+            MyselfRSA = new RSAHelper();
+            var publicKey = MyselfRSA.KeyToXmlString;
+            string singleSecurity = CustomerSecurity.Encrypt(publicKey, randomKey);//得到公钥的简单加密
+            byte[] sidArray = protocol.GetSessionIDFromReciveArray(obj);
+            protocol.ExchangeKey(sidArray, singleSecurity);
         }
         private static void Protocol_ExchangeKeyEvent(byte[] obj)
         {
@@ -130,21 +153,8 @@ namespace SecureCommunication
             byte[] sid = protocol.GetSessionIDFromReciveArray(obj);
             string sidStr = Encoding.Default.GetString(sid);
             Console.Write("Have new request" + sidStr + ",agree?:");
-            var key = Console.ReadKey();
-            if (key.Key == ConsoleKey.Y) {//同意请求
-                //生成一个随机加密的字符串
-                
-                string str = "";
-                Random rd = new Random();
-                for (int i = 0; i < 1000; i++)
-                    str += rd.Next().ToString();
-                randomKey = str;
-                MyselfRSA = new RSAHelper();
-                var publicKey = MyselfRSA.KeyToXmlString;
-                string singleSecurity = CustomerSecurity.Encrypt(publicKey, randomKey);//得到公钥的简单加密
-                byte[] sidArray= protocol.GetSessionIDFromReciveArray(obj);
-                protocol.ExchangeKey(sidArray, singleSecurity);
-            }
+            List<byte> lst = new List<byte>(obj);
+            AgreeObj = lst.ToArray();
             //throw new NotImplementedException();
         }
     }

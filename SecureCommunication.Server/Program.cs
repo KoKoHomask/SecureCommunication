@@ -38,11 +38,11 @@ namespace SecureCommunication.Server
 
 
             udphelper = new UDPServerHelper(DeviceList, iPAddress, 12345);
-            protocol = new Protocol(DeviceList,udphelper,false);
+            protocol = new Protocol(DeviceList,udphelper);
             protocol.ServerInfoMsg = "This is open source project in github. https://github.com/KoKoHomask/SecureCommunication";
 
 
-            udphelper.StartUDP();
+            udphelper.Start();
             udphelper.ReciveDataEvent += Udphelper_ReciveDataEvent;
             Console.WriteLine("\n\n Press [F4] to exit。");
             ConsoleKey key;
@@ -52,7 +52,7 @@ namespace SecureCommunication.Server
                 if (key == ConsoleKey.F4)
                 {
                     Console.WriteLine("end waiting for udp data.");
-                    udphelper.StopUDP();
+                    udphelper.Stop();
                     break;
                 }
                 Thread.Sleep(1);

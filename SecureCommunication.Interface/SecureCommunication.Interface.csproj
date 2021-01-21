@@ -1,11 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SecureCommunication.Interface\SecureCommunication.Interface.csproj" />
     <ProjectReference Include="..\SecureCommunication.Model\SecureCommunication.Model.csproj" />
   </ItemGroup>
 

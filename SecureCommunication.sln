@@ -11,6 +11,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SecureCommunication.Server"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RSA加密解密", "RSA加密解密\RSA加密解密.csproj", "{483B80BF-6DC3-4BB8-B813-84A8DEB37513}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SecureCommunication.Interface", "SecureCommunication.Interface\SecureCommunication.Interface.csproj", "{FA4861CD-83F3-4ECB-8E44-541DE8E3B884}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SecureCommunication.Model", "SecureCommunication.Model\SecureCommunication.Model.csproj", "{EFDB93EB-AF3E-4240-B152-8A351412CFE7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecureCommunication.Protocol", "SecureCommunication.Protocol\SecureCommunication.Protocol.csproj", "{B6048832-11AC-4B1A-A38F-19C1421D788C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +39,18 @@ Global
 		{483B80BF-6DC3-4BB8-B813-84A8DEB37513}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{483B80BF-6DC3-4BB8-B813-84A8DEB37513}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{483B80BF-6DC3-4BB8-B813-84A8DEB37513}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA4861CD-83F3-4ECB-8E44-541DE8E3B884}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA4861CD-83F3-4ECB-8E44-541DE8E3B884}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA4861CD-83F3-4ECB-8E44-541DE8E3B884}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA4861CD-83F3-4ECB-8E44-541DE8E3B884}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFDB93EB-AF3E-4240-B152-8A351412CFE7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFDB93EB-AF3E-4240-B152-8A351412CFE7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFDB93EB-AF3E-4240-B152-8A351412CFE7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFDB93EB-AF3E-4240-B152-8A351412CFE7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B6048832-11AC-4B1A-A38F-19C1421D788C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B6048832-11AC-4B1A-A38F-19C1421D788C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B6048832-11AC-4B1A-A38F-19C1421D788C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B6048832-11AC-4B1A-A38F-19C1421D788C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

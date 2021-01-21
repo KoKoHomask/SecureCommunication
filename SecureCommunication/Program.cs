@@ -24,7 +24,7 @@ namespace SecureCommunication
             string localPort = Console.ReadLine();
             //udphelper = new UDPClientHelper(DeviceList, int.Parse(localPort), "39.107.243.182", 12345);
             udphelper = new UDPClientHelper(DeviceList, int.Parse(localPort), "192.168.1.77", 12345);
-            udphelper.StartUDP();
+            udphelper.Start();
 
             protocol = new ClientProtocol(DeviceList, udphelper);
             protocol.NewChatEvent += Protocol_NewChatEvent;

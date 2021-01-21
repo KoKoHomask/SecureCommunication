@@ -2,12 +2,14 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <RuntimeIdentifier>win10-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SecureCommunication.Common\SecureCommunication.Common.csproj" />
+    <ProjectReference Include="..\SecureCommunication.Interface\SecureCommunication.Interface.csproj" />
+    <ProjectReference Include="..\SecureCommunication.Protocol\SecureCommunication.Protocol.csproj" />
   </ItemGroup>
 
 </Project>

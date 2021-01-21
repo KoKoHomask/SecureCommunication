@@ -8,9 +8,17 @@ namespace SecureCommunication.Protocol
 {
     public class TestProtocol : IProtocol
     {
-        public byte[] RecieveDataProcess(ConnectModel connect, int len)
+
+        ProtocolBackModel IProtocol.RecieveDataProcess(ConnectModel connect, int len)
         {
-            throw new NotImplementedException();
+            ProtocolBackModel model = new ProtocolBackModel();
+            var strArray = Encoding.Default.GetBytes("hello world");
+            byte[] array = new byte[len + strArray.Length];
+            Array.Copy(strArray, array, strArray.Length);
+            Array.Copy(connect.rData, 0, array, strArray.Length, len);
+            model.Array = array;
+            model.Status = BackStatus.WAITNEXT;
+            return model;
         }
     }
 }

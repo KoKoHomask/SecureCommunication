@@ -13,8 +13,8 @@ namespace SecureCommunication.Common
     {
         const int BufLen = 4096;
         TcpListener Listener { get; }
-        IProtocol Protocol { get; }
-        public TCPServer(string Address, int Port,IProtocol protocol)
+        List<IProtocol> Protocol { get; }
+        public TCPServer(string Address, int Port, List<IProtocol> protocol)
         {
             var address = IPAddress.Parse(Address);
             Listener = new TcpListener(address, Port);
@@ -36,11 +36,19 @@ namespace SecureCommunication.Common
         {
             try
             {
-                var connect = asyncCall.AsyncState as ConnectModel;
-                var len = connect.client.EndReceive(asyncCall);
-                var res = Protocol.RecieveDataProcess(connect, len);
-                if (res.Array != null && res.Array.Length > 0)
-                    connect.client.Send(res.Array);
+                ProtocolBackModel res = null;
+                ConnectModel connect = asyncCall.AsyncState as ConnectModel;
+                for (int i = 0; i < Protocol.Count; i++)
+                {
+                    var _protocol = Protocol[i];
+                    var len = connect.client.EndReceive(asyncCall);
+                    res = _protocol.RecieveDataProcess(connect, len);
+                    if (res.Array != null && res.Array.Length > 0)
+                        connect.client.Send(res.Array);
+
+                    if (res.Status != BackStatus.ABANDONED)//这个协议对本次请求有特殊要求
+                        break;//跳出循环
+                }
                 //此处预留后期扩展成协议池
                 switch (res.Status)
                 {
@@ -54,8 +62,9 @@ namespace SecureCommunication.Common
                         break;
                 }
             }
-            catch { }
-                     
+            catch(Exception ex) {
+                Console.WriteLine(ex.ToString());
+            }           
         }
     }
 }

@@ -11,11 +11,20 @@ namespace SecureCommunication.Common
 {
     public class TCPServer
     {
-        const int BufLen = 4096;
+        public int BufLen { get; private set; } = 4096;
         TcpListener Listener { get; }
         List<IProtocol> Protocol { get; }
         public TCPServer(string Address, int Port, List<IProtocol> protocol)
         {
+            var address = IPAddress.Parse(Address);
+            Listener = new TcpListener(address, Port);
+            Protocol = protocol;
+            Listener.Start();
+            Listener.BeginAcceptSocket(ListenerBeginCall, Listener);
+        }
+        public TCPServer(string Address, int Port, List<IProtocol> protocol,int bufLen)
+        {
+            BufLen = bufLen;
             var address = IPAddress.Parse(Address);
             Listener = new TcpListener(address, Port);
             Protocol = protocol;
@@ -38,10 +47,10 @@ namespace SecureCommunication.Common
             {
                 ProtocolBackModel res = null;
                 ConnectModel connect = asyncCall.AsyncState as ConnectModel;
+                var len = connect.client.EndReceive(asyncCall);
                 for (int i = 0; i < Protocol.Count; i++)
                 {
                     var _protocol = Protocol[i];
-                    var len = connect.client.EndReceive(asyncCall);
                     res = _protocol.RecieveDataProcess(connect, len);
                     if (res.Array != null && res.Array.Length > 0)
                         connect.client.Send(res.Array);
